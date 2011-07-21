@@ -1,0 +1,238 @@
+<apex:component >
+	
+	<apex:attribute name="objectType" description="Used for the REST Query" type="String" required="true"/>
+	<apex:attribute name="parentObjectName" description="Used for the REST Query" type="String" required="true"/>
+	<apex:attribute name="fieldToQuery" description="Child field Name" type="String" required="true"/>
+	<apex:attribute name="parentId" description="The inital id of the parent." type="String" required="true"/>
+	<apex:attribute name="objectPluralLabel" description="The plural label." type="String" required="true"/>
+	
+    <apex:includeScript value="{!URLFOR($Resource.restJavascript, '/rest/_lib/jquery.js')}"  />
+    <apex:includeScript value="{!URLFOR($Resource.restJavascript, '/rest/forcetk.js')}"  />
+    <apex:includeScript value="{!URLFOR($Resource.restJavascript, '/rest/_lib/jquery.cookie.js')}"  />
+    <apex:includeScript value="{!URLFOR($Resource.restJavascript, '/rest/_lib/jquery.hotkeys.js')}"  />
+ 	<apex:includeScript value="{!URLFOR($Resource.restJavascript, '/rest/jquery.jstree.js')}"  />
+   	
+   	<div id="tree2"></div>
+   	<div id="tree"></div>
+    <div id="dbg"></div>
+    
+    <script type="text/javascript">
+       
+       	//////////////////////////////////////////////////
+       	//
+       	// VARS
+       	//
+       	//////////////////////////////////////////////////
+       	
+       	var dbg = false;	
+     	var objectToQuery = '{!objectType}';
+        var parentId = '{!parentId}';  
+        var fieldToQuery = '{!fieldToQuery}';
+
+        var pluralLabel = "{!objectPluralLabel}";
+        
+    	//////////////////////////////////////////////////
+       	//
+       	// Get a reference to jQuery that we can work with
+       	//
+       	//////////////////////////////////////////////////
+       	
+        $j = jQuery.noConflict();
+       	
+       	///////////////////////////////////////
+       	//
+       	// Load the themes
+       	//
+       	///////////////////////////////////////
+       	
+       	$j.jstree._themes = "{!URLFOR($Resource.restJavascript, '/rest/themes/')}";
+       	
+       	///////////////////////////////////////
+       	//
+       	// Get an instance of the REST API client
+   		//
+       	///////////////////////////////////////
+       	
+   		var client = new forcetk.Client('{!$Api.Session_ID}');
+    
+       	//////////////////////////////////////////////////
+       	//
+       	// Instantiate the inital jsTree
+       	//
+       	/////////////////////////////////////////////////
+       	
+       	$j("#tree").jstree({ 
+       			"plugins" : [ "themes", "json_data", "ui", "crrm", "cookies", "dnd", "search", "types", "hotkeys", "contextmenu" ],
+       	
+	            "json_data" : {
+	                "data" : [
+	                    { 
+	                        "data" : "{!parentObjectName}",
+	                        "state": "closed", 
+	                        "attr" : { "id" : parentId }
+	                     
+	                    },
+	                ]
+	            },
+	            "types" : {
+
+					"max_depth" : -2,
+					"max_children" : -2,
+					"type_attr" : "rel",
+					"valid_children" : [ "default" ],
+	            
+	            	////////////////////////////////
+	            	// Define the themes
+	            	////////////////////////////////
+	            	
+		            "types" : {
+				
+							"children" : {
+								"icon" : { 
+									"image" : "{!URLFOR($Resource.restJavascript, '/rest/folder.jpg')}" 
+								},
+								"valid_children" : ["noChildren","children" ]
+							},
+							"noChildren" : {
+								"icon" : { 
+									"image" : "{!URLFOR($Resource.restJavascript, '/rest/leaf.jpg')}" 
+								},
+								"valid_children" : ["noChildren","children" ]
+							},
+							
+							"default" : {
+								"icon" : { 
+									"image" : "{!URLFOR($Resource.restJavascript, '/rest/home.jpg')}" 
+								},
+								"valid_children" : [ "noChildren","children" ]
+							}
+					}
+				}
+	       
+				
+	            
+	        });
+	        
+	//////////////////////////////////////////////////
+    //
+    // Add the logic to query if there are children
+    //
+    /////////////////////////////////////////////////
+	
+	$j("#tree").bind("open_node.jstree close_node.jstree click", function (e,data) {
+			
+		if(e.type == 'open_node' && data.args[0].attr("id") != parentId) {
+		
+          	var thisNode = $j('#'+data.args[0].attr("id"));
+          
+          	if(thisNode.find('li').length == 0) {
+          	
+            	loadNode(data.args[0].attr("id"));
+           
+           	}
+		}
+    	
+    	
+    })
+
+  	$j("#tree").delegate("a","click", function (e) {
+  		
+  		/// Dont open a window for ultimate parent
+  		if($j(this).parent().attr("id") != parentId) {
+  		
+  			window.open("/" + $j(this).parent().attr("id"),"mywindow","status=1,toolbar=1,location=1,menubar=1,resizable=1,scrollbars=1");
+
+  		}
+	 });
+	 
+    //////////////////////////////////////////////////
+    //
+    // Load nodes
+    //
+    /////////////////////////////////////////////////	   
+
+	function loadNode(parentIdPassed) {
+    
+    	var query = "SELECT Id," +fieldToQuery +", Name, (Select Id From "+pluralLabel+") FROM " + objectToQuery + " WHERE " +fieldToQuery +" = '" + parentIdPassed + "'";
+    	
+    	/////////////////////
+    	/// Debugging
+    	/////////////////////
+    	
+    	if(dbg) {document.getElementById('dbg').innerHTML += "<br/>---<br/> node query - " + query;}
+    	
+    	client.query(query,parseNode);
+   	
+   	}
+   	
+   	function firstNodeLoad() {
+    	
+    	var query = "SELECT Id," +fieldToQuery +", Name, (Select Id From "+pluralLabel+") FROM " + objectToQuery + " WHERE " +fieldToQuery +" = '" + parentId + "'";
+    	
+    	/////////////////////
+    	/// Debugging
+    	/////////////////////
+    	
+    	if(dbg) {document.getElementById('dbg').innerHTML += "<br/>---<br/> firstNodeLoad query - " + query;}
+ 
+    	client.query(query,parseNode);
+   		
+   	}
+      
+     
+    //////////////////////////////////////////////////
+    //
+    //	Parse the REST repsonse
+    //
+    /////////////////////////////////////////////////
+    
+    function parseNode(response) {
+      	
+        for(var i=0; i<response.records.length; i++) {
+      	 	
+      	 	var hasChildren = false;
+      	 	
+      	  	if(response.records[i][pluralLabel]!= null) {
+      	 		
+      	 		hasChildren = true;
+			}
+			
+			addNode(response.records[i][fieldToQuery],response.records[i].Name,response.records[i].Id,hasChildren);
+		}
+        	
+    }	
+        
+	//////////////////////////////////////////////////
+    //
+    // Add each node
+    //
+    /////////////////////////////////////////////////	 	
+    
+    function addNode(localParentId,nodeName,nodeId,hasChildren) {
+    		
+    		////////////////////////////////////////////
+    		//
+    		// Create a new node on the tree
+    		//
+    		////////////////////////////////////////////
+    		
+    		if(hasChildren) {
+			
+				/// If it has children we load the node a little differently
+				
+				$j("#tree").jstree("create", $j("#"+localParentId), "inside",  { "data" : nodeName ,"state" : "closed","attr" : { "id" : nodeId,"rel":"children"}},null, true);
+
+				
+			} else {
+    		
+    			$j("#tree").jstree("create", $j("#"+localParentId), "inside",  { "data" : nodeName ,"state" : "leaf","attr" : { "id" : nodeId,"rel":"noChildren"}},null, true);
+			
+			}
+			
+	}
+	
+	window.onload = firstNodeLoad;
+  
+	</script>
+	
+</apex:component>

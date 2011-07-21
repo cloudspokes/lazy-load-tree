@@ -1,0 +1,3 @@
+<apex:page standardController="Parent_Object__c">
+	<c:lazyLoadingTree objectPluralLabel="Parent_Objects__r" objectType="Parent_Object__c" parentObjectName="{!Parent_Object__c.Name}" fieldToQuery="Parent_Object__c" parentId="{!Parent_Object__c.Id}" />
+</apex:page>

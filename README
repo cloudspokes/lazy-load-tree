@@ -1,0 +1,13 @@
+Lazy Loading Tree with the Force.com JavaScript REST Toolkit
+
+URL: http://www.cloudspokes.com/challenge_detail.html?contestID=173
+Blog: http://blog.cloudspokes.com/2011/05/winner-lazy-loading-tree-with-forcecom.html
+Challenge end date: Tue Apr 26 01:00:00 GMT 2011
+
+Description
+===========
+We’d like to build a JavaScript tree component for Visualforce that lazily loads its nodes using the Force.com JavaScript REST Toolkit.
+
+Requirements
+============
+<p><a href="http://twitter.com/metadaddy" target="_blank">Pat Patterson</a>, salesforce.com Developer Evangelist, just released the <a href="https://github.com/metadaddy-sfdc/Force.com-JavaScript-REST-Toolkit" target="_blank">Force.com JavaScript REST Toolkit</a>. The toolkit allows JavaScript in Visualforce pages to call the Force.com REST API via the Ajax Proxy, providing an easy-to-use JavaScript wrapper. We’d like to use this toolkit as a basis for the tree component.</p> <p>The component should use an existing tree component such as, but not limited to, <a href="http://www.jstree.com/" target="_blank">jsTree</a> (jQuery), <a href="http://dojotoolkit.org/reference-guide/dijit/Tree.html#dijit-tree" target="_blank">dijit Tree</a> (Dojo) or <a href="http://www.sencha.com/products/extjs/examples/#sample-8" target="_blank">XML Tree Loader</a> (Ext JS). Use a single custom object to model the data used by the tree with a parent/child relationship.</p> <p>When the Visualforce page load, the tree component should query for and load the first and second level nodes. Nodes with child elements should display as a folder. Expanding a folder causes the tree to use the Force.com JavaScript REST Toolkit to fetch the next level of nodes and display them accordingly.</p> <p>Create a custom object with a reference to itself to model the hierarchy.</p> <p>Selecting any of the nodes opens the salesforce.com record in a new window.</p> <p>Extra credit for making the tree available as a Visualforce component.</p>
